@@ -23,8 +23,7 @@ public class PKEncryptOutputStream extends OutputStream
 	final private OutputStream out;
 	
         private static final int AES_Key_Size = 256;
-        private SecretKey aesKey;
-	private Cipher aesCipher;
+	private final Cipher aesCipher;
 
 	public PKEncryptOutputStream(OutputStream out, PublicKey pk) throws IOException
 	{
@@ -36,7 +35,7 @@ public class PKEncryptOutputStream extends OutputStream
 			aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			KeyGenerator kgen = KeyGenerator.getInstance("AES");
 			kgen.init(AES_Key_Size);
-			aesKey = kgen.generateKey();
+			SecretKey aesKey = kgen.generateKey();
 			
 			DataOutputStream dos = new DataOutputStream(out);
 			dos.writeInt(VERSION);
@@ -73,15 +72,24 @@ public class PKEncryptOutputStream extends OutputStream
 			out.write(b);
 	}
 
+	/** Writes the final encrypted bytes and closes the underlying stream.
+	 */
 	@Override
 	public void close() throws IOException
 	{
 		try
 		{
 			out.write(aesCipher.doFinal());
+			out.close();
 		} catch(GeneralSecurityException e)
 		{
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void flush() throws IOException
+	{
+		out.flush();
 	}
 }
